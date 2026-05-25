@@ -8,7 +8,6 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Serve with custom nginx config
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY ../docker/nginx-frontend.conf /etc/nginx/conf.d/default.conf

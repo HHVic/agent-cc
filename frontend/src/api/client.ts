@@ -8,18 +8,59 @@ export interface ClarificationRequest {
 
 export interface SSEEvent {
   type: string;
-  data?: unknown;
+  agent?: string;
+  timestamp?: string;
   content?: unknown;
-  round?: number;
-  timestamp?: number;
 }
 
 export interface ClarificationResponse {
   session_id: string;
   status: string;
-  questions: Record<string, unknown>[];
+  questions: ClarificationQuestion[];
   tech_questions: Record<string, unknown>[];
   rounds: number;
+}
+
+export interface ClarificationQuestion {
+  id: string;
+  text: string;
+  category: string;
+  severity: string;
+  source_code_refs?: SourceCodeRef[];
+  requirement_ref?: string;
+  suggested_options?: string[];
+}
+
+export interface SourceCodeRef {
+  file: string;
+  line?: number;
+  snippet?: string;
+}
+
+export interface ClarificationRound {
+  round: number;
+  questions: ClarificationQuestion[];
+  filtered_questions: ClarificationQuestion[];
+  passed: boolean;
+}
+
+export interface AnalysisResult {
+  coverage_score: number;
+  covered_points: string[];
+  uncovered_gaps: string[];
+  needs_more_exploration: boolean;
+  exploration_feedback: string;
+}
+
+export interface SessionState {
+  sessionId: string;
+  status: 'idle' | 'started' | 'running' | 'completed' | 'error';
+  questions: ClarificationQuestion[];
+  techQuestions: Record<string, unknown>[];
+  events: SSEEvent[];
+  analysis?: AnalysisResult;
+  clarificationRounds: ClarificationRound[];
+  error?: string;
 }
 
 export function createApiClient() {
@@ -33,7 +74,7 @@ export function createApiClient() {
     return res.json();
   }
 
-  function connectEvents(sessionId: string): EventSource {
+  function connectEvents(sessionId: string, onEvent: (event: SSEEvent) => void): EventSource {
     return new EventSource(`${API_BASE}/clarification/${sessionId}/events`);
   }
 
