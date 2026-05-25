@@ -244,24 +244,29 @@ export function RequirementClarification() {
     setStatus('running');
 
     try {
-      const { startSession, connectEvents } = createApiClient();
+      const { startSession } = createApiClient();
       const { session_id } = await startSession({ requirement_doc: doc });
       setSessionId(session_id);
 
-      connectEvents(session_id, (event: SSEEvent) => {
-        // Update status based on event types
-        if (event.type === 'error') {
-          setStatus('error');
-          setErrorMsg(typeof event.content === 'string' ? event.content : 'Unknown error');
-        }
-        if (event.type === 'critic_pass' || event.type === 'done') {
-          setStatus('completed');
-        }
-        // Extract questions from events
-        if (event.type === 'questions_generated' && Array.isArray(event.content)) {
-          setQuestions(event.content);
-        }
-      });
+      // Handle SSE events inline
+      const evtSource = new EventSource(`/api/v1/clarification/${session_id}/events`);
+      evtSource.onmessage = (event) => {
+        if (event.data.startsWith(':')) return;
+        try {
+          const parsed: SSEEvent = JSON.parse(event.data);
+          if (parsed.type === 'error') {
+            setStatus('error');
+            setErrorMsg(typeof parsed.content === 'string' ? parsed.content : 'Unknown error');
+          }
+          if (parsed.type === 'critic_pass' || parsed.type === 'done') {
+            setStatus('completed');
+          }
+          if (parsed.type === 'questions_generated' && Array.isArray(parsed.content)) {
+            setQuestions(parsed.content);
+          }
+        } catch { /* skip */ }
+      };
+      evtSource.onerror = () => evtSource.close();
     } catch (err) {
       setStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Failed to start session');

@@ -74,7 +74,7 @@ export function createApiClient() {
     return res.json();
   }
 
-  function connectEvents(sessionId: string, onEvent: (event: SSEEvent) => void): EventSource {
+  function connectEvents(sessionId: string): EventSource {
     return new EventSource(`${API_BASE}/clarification/${sessionId}/events`);
   }
 

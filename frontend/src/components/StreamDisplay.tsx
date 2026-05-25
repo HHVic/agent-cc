@@ -3,10 +3,9 @@ import type { SSEEvent } from '../api/client';
 
 interface StreamDisplayProps {
   sessionId: string;
-  onEvent?: (event: SSEEvent) => void;
 }
 
-export function StreamDisplay({ sessionId, onEvent }: StreamDisplayProps) {
+export function StreamDisplay({ sessionId }: StreamDisplayProps) {
   const [events, setEvents] = useState<SSEEvent[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -18,14 +17,13 @@ export function StreamDisplay({ sessionId, onEvent }: StreamDisplayProps) {
       try {
         const parsed: SSEEvent = JSON.parse(event.data);
         setEvents(prev => [...prev, parsed]);
-        onEvent?.(parsed);
       } catch { /* skip non-JSON messages */ }
     };
 
     evtSource.onerror = () => evtSource.close();
 
     return () => evtSource.close();
-  }, [sessionId, onEvent]);
+  }, [sessionId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,7 +34,7 @@ export function StreamDisplay({ sessionId, onEvent }: StreamDisplayProps) {
       {events.map((event, i) => (
         <div key={i} style={{ padding: '2px 0', borderBottom: '1px solid #333' }}>
           <span style={{ color: '#888' }}>[{event.type}]</span>
-          {' '}{JSON.stringify(event.content ?? event.data)}
+          {' '}{JSON.stringify(event.content ?? null)}
         </div>
       ))}
       <div ref={bottomRef} />
